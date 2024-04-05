@@ -1,0 +1,742 @@
+TARGET BUSINESS ANALYSIS  
+
+ 
+
+A. Data type of all columns in the “customers” table.  
+
+ 
+
+SELECT column_name, data_type 
+
+FROM `target-414114.target_sql.INFORMATION_SCHEMA.COLUMNS` 
+
+WHERE table_name = 'customers'; 
+
+ 
+
+ 
+
+ 
+
+While running the above code  i am not getting any result and this is prompting on the result window (There is no data to display.) 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+B. Get the time range between which the orders were placed. 
+
+select min(order_purchase_timestamp) as start_time, 
+
+max(order_purchase_timestamp) as end_time 
+
+from `target-414114.target_sql.orders ` 
+
+ 
+
+ 
+
+Inference-The start and end dates of the data i.e. from 4th September 2016 to 17th October 2018. 
+, providing a context for our analysis. 
+
+C. Count the Cities & States of customers who ordered during the given period. 
+
+ 
+
+ 
+
+Inference-we can see that Sao Paulo city from SP state alone has more orders than 
+the following 5 cities combined 
+
+II. In-depth Exploration: 
+
+A. Is there a growing trend in the no. of orders placed over the past years? 
+
+select  
+
+extract(year from order_purchase_timestamp) as year ,  
+
+extract(month from order_purchase_timestamp) as month, 
+
+count(distinct o.order_id) as order_count 
+
+from `target-414114.target_sql.orders ` o  
+
+join `target-414114.target_sql.customers ` c   
+
+on o.customer_id=c.customer_id  
+
+group by year, month 
+
+order by year ,month 
+
+ 
+
+ 
+
+Inference-it can be observed that there is a growing trend in e-commerce in Brazil. The count of purchases has shown an overall upward trend, with some fluctuations but to gain accurate understanding we should consider revenue growth as well. 
+
+B. Can we see some kind of monthly seasonality in terms of the no. of orders being Placed? 
+
+ 
+
+ 
+
+Inference-Here we can see the similarity in the count of order being placed on monthly bases as it is showing a growing trend with some fluctuation comparing January order count with December it shows decline in order count and highest order count is in the month of august and the lowest order count is in the month of September. 
+
+ 
+
+ 
+
+C. During what time of the day, do the Brazilian customers mostly place their 
+
+orders? (Dawn, Morning, Afternoon or Night) 
+
+● 0-6 hrs : Dawn 
+
+● 7-12 hrs : Mornings 
+
+● 13-18 hrs : Afternoon 
+
+● 19-23 hrs : Night  
+
+select  
+
+case when extract(hour from order_purchase_timestamp) between 0 and 6 then 'Dawn' 
+
+when extract(hour from order_purchase_timestamp) between 7 and 12 then 'Mornings' 
+
+when extract (hour from order_purchase_timestamp) between 13 and 18 then 'Afternoon' 
+
+when extract(hour from order_purchase_timestamp) between 19 and 23 then 'Night' 
+
+end as hour , 
+
+count(distinct o.order_id) as order_count 
+
+from `target-414114.target_sql.orders ` o 
+
+join `target-414114.target_sql.customers ` c 
+
+on o.customer_id=c.customer_id 
+
+group by hour  
+
+order by order_count desc 
+
+ 
+
+ 
+
+Inference-Based on the analysis the Brazilian customer tends to place the orders in the afternoon and night by analysis the buying pattern of the customer with the peak hour of buying the e-commerce company target can focus there add campaign on the peak hour of buying of products and maximise the order placed by   focusing and increasing the number of resources in the specific time . 
+
+ 
+
+III. Evolution of E-commerce orders in the Brazil region: 
+
+A. Get the month-on-month no. of orders placed in each state. 
+
+select c.customer_state, 
+
+extract(month from order_purchase_timestamp ) as month , 
+
+count(o.order_id) as order_count 
+
+from `target-414114.target_sql.orders ` o  
+
+join `target-414114.target_sql.customers ` c  
+
+on o.customer_id=c.customer_id  
+
+group by 1,month 
+
+order by 1,order_count desc 
+
+ 
+
+ 
+
+ 
+
+Inference –Month 4 and 5 has the highest numbers of order count 
+
+B. How are the customers distributed across all the states? 
+
+select customer_state, 
+
+count(distinct customer_id) as no_of_customer 
+
+from `target-414114.target_sql.customers ` 
+
+group by 1 
+
+order by 2 desc 
+
+ 
+
+ 
+
+ 
+
+Inference-By analysing the data we can clearly come to and conclusion that Sao Paulo  has the most number of customer and PA is the state with least customer by this data Target as an e-commerce company can alter or change its marketing strategy and allocate maximum resources  to the states where they are getting more customers wo maximise their profit and increase the revenue numbers and gain new customers too 
+
+IV. Impact on Economy: Analyse the money movement by e-commerce by looking at 
+
+order prices, freight and others. 
+
+A. Get the % increase in the cost of orders from year 2017 to 2018 (include 
+
+months between Jan to Aug only). 
+
+WITH orders_2017_2018 AS ( 
+
+  SELECT  
+
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) AS year, 
+
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, 
+
+    p.payment_value  
+
+  FROM  
+
+    `target-414114.target_sql.orders ` o  
+
+  JOIN  
+
+    `target-414114.target_sql.payments` p   
+
+  ON  
+
+    o.order_id = p.order_id  
+
+  WHERE  
+
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) IN (2017, 2018) AND  
+
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) BETWEEN 1 AND 8 
+
+) 
+
+SELECT  
+
+  month, 
+
+  ((SUM(CASE WHEN year = 2018 THEN payment_value ELSE 0 END) - SUM(CASE WHEN year = 2017 THEN payment_value ELSE 0 END)) / NULLIF(SUM(CASE WHEN year = 2017 THEN payment_value ELSE 0 END), 0)) * 100 AS percentage_increase 
+
+FROM  
+
+  orders_2017_2018 
+
+GROUP BY  
+
+  month  
+
+ORDER BY  
+
+  month; 
+
+ 
+
+ 
+
+Inference-The overall percentage increase in the cost of orders from 2017 to 2018, including only the months from January to August, is 138.53%. Upon examining the month-wise increase, January shows the highest percentage increase, followed by February and Apri 
+
+ 
+
+B. Calculate the Total & Average value of order price for each state.  
+
+select customer_state , 
+
+        sum(price + freight_value) as total , 
+
+        avg(price + freight_value) as average 
+
+from `target-414114.target_sql.customers ` c  
+
+join `target-414114.target_sql.orders ` o 
+
+  on c.customer_id = o.customer_id 
+
+join `target-414114.target_sql.order_items` oi 
+
+  on o.order_id = oi.order_id 
+
+group by customer_state 
+
+ 
+
+ 
+
+Inference-PB has the highest average order price value  
+
+C. Calculate the Total & Average value of order freight for each state. 
+
+ 
+
+select c.customer_state, sum (ot.freight_value) as total_frieght_value, 
+
+avg(ot.freight_value) as avg_frieght_value  
+
+from `target-414114.target_sql.customers ` c   
+
+join `target-414114.target_sql.orders ` o  
+
+on c.customer_id=o.customer_id  
+
+join `target-414114.target_sql.order_items` ot  
+
+on o.order_id=ot.order_id 
+
+group by 1 
+
+ 
+
+ 
+
+Inferences- PB has the highest average freight value and  SP has the highest total fieght value  
+
+ 
+
+V. Analysis based on sales, freight and delivery time. 
+
+ 
+
+A. Find the no. of days taken to deliver each order from the order’s purchase date 
+
+as delivery time. 
+
+Also, calculate the difference (in days) between the estimated & actual delivery 
+
+date of an order. 
+
+Do this in a single query. 
+
+ 
+
+SELECT order_id  
+
+ DATE_DIFF(order_delivered_customer_date, order_purchase_timestamp, day) AS delivery_time, 
+
+       DATE_DIFF(order_delivered_customer_date, order_estimated_delivery_date, day) AS diff_estimated_delivery 
+
+FROM `target-414114.target_sql.orders ` 
+
+WHERE order_status = 'delivered'; 
+
+ 
+
+ 
+
+ 
+
+B. Find out the top 5 states with the highest & lowest average freight value. 
+
+(select c.customer_state, 
+
+avg(ot.freight_value) as avg_freight_value ,'lowest' as type 
+
+from `target-414114.target_sql.customers `c  
+
+join `target-414114.target_sql.orders ` o  
+
+on c.customer_id=o.customer_id  
+
+join `target-414114.target_sql.order_items` ot  
+
+on o.order_id=ot.order_id 
+
+group by 1 
+
+order by 2   
+
+limit 5)  
+
+union all 
+
+(select c.customer_state, 
+
+avg(ot.freight_value) as avg_freight_value ,'highest' as type 
+
+from `target-414114.target_sql.customers `c  
+
+join `target-414114.target_sql.orders ` o  
+
+on c.customer_id=o.customer_id  
+
+join `target-414114.target_sql.order_items` ot  
+
+on o.order_id=ot.order_id 
+
+group by 1 
+
+order by 2  desc 
+
+limit 5) 
+
+ 
+
+ 
+
+ 
+
+C. Find out the top 5 states with the highest & lowest average delivery time. 
+
+ 
+
+( 
+
+  SELECT  
+
+    customer_state, 
+
+    AVG(delivery_time) AS avg_delivery_time, 
+
+    'Lowest' AS type 
+
+  FROM 
+
+  ( 
+
+    SELECT  
+
+      customer_state, 
+
+      DATE_DIFF(order_delivered_customer_date, order_purchase_timestamp, day) AS delivery_time 
+
+    FROM  
+
+      `target-414114.target_sql.orders ` o   
+
+    JOIN  
+
+      `target-414114.target_sql.customers ` c 
+
+    ON  
+
+      o.customer_id = c.customer_id 
+
+    WHERE  
+
+      order_status = 'delivered'  
+
+      AND order_delivered_customer_date IS NOT NULL 
+
+  ) AS delivery_times 
+
+  GROUP BY  
+
+    customer_state 
+
+  ORDER BY  
+
+    avg_delivery_time ASC 
+
+  LIMIT 5 
+
+) 
+
+ 
+
+UNION ALL 
+
+ 
+
+( 
+
+  SELECT  
+
+    customer_state, 
+
+    AVG(delivery_time) AS avg_delivery_time, 
+
+    'Highest' AS type 
+
+  FROM 
+
+  ( 
+
+    SELECT  
+
+      customer_state, 
+
+      DATE_DIFF(order_delivered_customer_date, order_purchase_timestamp, day) AS delivery_time 
+
+    FROM  
+
+      `target-414114.target_sql.orders ` o   
+
+    JOIN  
+
+      `target-414114.target_sql.customers ` c 
+
+    ON  
+
+      o.customer_id = c.customer_id 
+
+    WHERE  
+
+      order_status = 'delivered'  
+
+      AND order_delivered_customer_date IS NOT NULL 
+
+  ) AS delivery_times 
+
+  GROUP BY  
+
+    customer_state 
+
+  ORDER BY  
+
+    avg_delivery_time DESC 
+
+  LIMIT 5 
+
+) 
+
+ 
+
+ 
+
+ 
+
+ 
+
+D. Find out the top 5 states where the order delivery is really fast as compared to 
+
+the estimated date of delivery. 
+
+select customer_state , 
+
+       avg(diff_estimated_delivery) as total 
+
+from 
+
+(select order_id , customer_state , 
+
+date_diff(order_delivered_customer_date,order_estimated_delivery_date, 
+
+day) as diff_estimated_delivery 
+
+from `target-414114.target_sql.orders ` o  
+
+join `target-414114.target_sql.customers ` c 
+
+    on o.customer_id = c.customer_id 
+
+where order_status = 'delivered' and 
+
+    order_delivered_customer_date is not null) 
+
+group by customer_state 
+
+order by total 
+
+limit 5 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+VI. Analysis based on the payments: 
+
+ 
+
+A. Find the month on month no. of orders placed using different payment types. 
+
+select  
+
+extract(month from order_purchase_timestamp) as order_month, 
+
+extract(year from order_purchase_timestamp) as order_year, 
+
+p.payment_type,count(*) as order_count 
+
+from `target-414114.target_sql.orders ` o  
+
+join `target-414114.target_sql.payments` p  
+
+on o.order_id=p.order_id 
+
+group by order_month,order_year,p.payment_type 
+
+order by order_year,order_month,p.payment_type 
+
+ 
+
+ 
+
+ 
+
+ 
+
+B. Find the no. of orders placed on the basis of the payment installments that have 
+
+been paid. 
+
+SELECT 
+
+  p.payment_installments, 
+
+  COUNT(o.order_id) AS order_count 
+
+FROM 
+
+  `target-414114.target_sql.orders ` o 
+
+JOIN 
+
+  `target-414114.target_sql.payments` p 
+
+ON 
+
+  o.order_id = p.order_id 
+
+WHERE 
+
+  o.order_status != 'canceled' 
+
+GROUP BY 
+
+  1 
+
+ORDER BY 
+
+  2 DESC; 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Actionable insights and Recommendations 
+
+There are following conclusions I would like to draw 
+
+As we can see that the count of order of Sao Paulo city from SP state is the 
+
+highest order count of 15540 and so on. Here we can further analyse what all 
+
+things people are looking forward to buy and what are the items which are 
+
+less preferred. There are few things which we can understand about our 
+
+customers like What customers are we targeting upon or what is the gender 
+
+ratio or what is the best products amongst men or women in a particular 
+
+category? We can recommend similar products so as to increase the traffic 
+
+for that particular item. We can further give more discounts or some sales 
+
+week off day so that customers can engage more into the online platform. The 
+
+overall attempt here is to understand more about our customers so as to 
+
+recommend them similar items based on their interests 
+
+However the least order placed is only count 1 for cities like MT and states 
+
+like vila bela da santissima Trindade. There are many more states with such 
+
+a less count of orders. We need to understand the reasons behind such a 
+
+small count of orders. With this we should have some analysis about the 
+
+reasons for such a low business. What all things can be done so as to 
+
+improve business in those places like understand the actual market, 
+
+Understand the gender ratio, Understand the competition with other retail 
+
+stores. We should also have often likes and dislikes online surveys. With 
+
+these we can understand our customers better and we can recommend them the 
+
+products they actual need. There also might be a possibility that these 
+
+people more often prefer to shop offline but given a good discounted price + 
+
+minimal transport cost can be a very good way to develop a healthy customers 
+
+relationships. We can also provide 50% off sale coupon for the first time 
+
+login users. These are some of the good ways we can implement to build a 
+
+good base to build more customers 
+
+After this we did observed a growing trend in number of orders which is 
+
+itself a positive things to look upon 
+
+However we have seen that the orders kept on increasing from 3rd quarter of 
+
+2016 to 1st quarter of 2018. But suddenly there has been a subsequent drop in 
+
+number of orders with quarter 4 of 2018 being the lowest. We can further 
+
+work on these factors so as to understand what is the reason behind a drop 
+
+in sales? 
+
+Then we have seen that the customers usually have a purchase in the afternoon time and the night times. But during the dawn period the count is really low. The highest customer count is from SP which is around 5620430 and lowest 
+
+around and lowest customer count is from RR around 2087 
+
+We have further seen that there is a subsequent growth in terms of percent 
+
+change of around 136.98 %. This is really positive in terms of business 
+
+growth 
+
+We have seen a subsequent total price of 43788 and average of 267 in 
+
+geolocation state of AC and total price of 1141328046.14 and average of 
+
+105.97 
+
+However the price of freight is SP state is around 198571257.84 and lowest 
+
+been around 5385.76 
+
+We can further try to reduce the delivery time so that the customers can 
+
+receive their orders really fast. 
+
+As per the analysis the top 5 states with highest averages include 
+
+CE,RO,PI,PB, AC and the top 5 states with lowest averages include RN, SP, 
+
+RJ, DF, PR 
+
+Further we have also seen that the delivery is much faster then the 
+
+estimated delivery in some states like ES, RS, PR, MA, AL,SC, etc. This is 
+
+really a positive thing so as to deliver the products as fast as possible so 
+
+that our customers can further place a new order 
+
+We can also refer to different payments methods like credit_card, 
+
+debit_card, Vouchers, UPI. 
+
+Finally we have seen that there are only two orders who have completed there payment installation 
+ 
+
+ 
